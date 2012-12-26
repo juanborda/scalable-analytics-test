@@ -1,3 +1,4 @@
+node-modules
 lib-cov
 *.seed
 *.log
