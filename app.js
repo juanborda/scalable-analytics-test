@@ -35,6 +35,18 @@ app.get('/get-all', function (req, res) {
 	});
 });
 
+app.get('/event/:id', function (req, res) {
+	mongo.Db.connect(mongoUri, function (err, db) {
+		db.collection('test', function (er, collection) {
+			var id = req.params.id;
+			var ev = collection.find({ "event.creative" : id });
+			var item = ev.toArray(function (err, docs) {
+				res.send({"events": docs});
+			});	
+		});
+	});
+});
+
 var port = process.env.PORT || 3000;
 console.log("Listening on " + port);
  
