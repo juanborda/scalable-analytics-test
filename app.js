@@ -1,19 +1,44 @@
 var express = require('express');
-var mongo = require('mongodb');
+var mongoose = require('mongoose');
 
-var mongoUri = process.env.MONGOLAB_URI || 
+var db_uri = process.env.MONGOLAB_URI || 
   process.env.MONGOHQ_URL || 
   'mongodb://localhost/mydb'; 
- 
+
+mongoose.connect(db_uri);
 var app = express();
+var db = mongoose.connection;
+
+db.on('error', console.error.bind(console, 'connection error:'));
+db.once('open', function callback () {
+  console.log('Connection to DB: SUCCESSFUL');
+});
+
+var eventSchema = mongoose.Schema({
+	 event : {
+         creative : String,
+         event : String,
+         consumer : String,
+         user : {
+            ip : String,
+            browser : String,
+            browser_version : String,
+            location : String
+         }
+ 	},
+});
+
+var Event = mongoose.model('Event', eventSchema);
+
 app.get('/', function(req, res) {
 	var a = req.query;
+
+	var e = new Event({ event : req.query });
 	
 	mongo.Db.connect(mongoUri, function (err, db) {		
 		db.collection('test', function (er, collection) {
 			collection.insert({'event': a});
 		});
-		console.log("EVENT: ", a);
 	});
 	res.send({ object: a, status: "success" });
 });
@@ -21,15 +46,16 @@ app.get('/', function(req, res) {
 app.get('/get-all', function (req, res) {
 	mongo.Db.connect(mongoUri, function (err, db) {
 		db.collection('test', function (er, collection) {
+			var start = Date.now();
+			console.log("time start: ", start);
 			collection.find(function (err, cursor) {
 				cursor.toArray(function (err, docs) {
-					var queryResults = [];
-				    for(var i=0; i<docs.length; i++) {
-						queryResults[i] = docs[i]; 
-				    }
-				    db.close();
-				    res.send({"objects": queryResults});
-				});
+					var end = Date.now();
+					console.log("time end: ", end);
+					console.log("------>");
+					var time = end - start;
+					res.send({ "queryTook" : time + "ms", "length" : docs.length});
+				}); 
 			});
 		});
 	});
